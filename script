@@ -6,6 +6,9 @@ mkdir -p /data/index
 mkdir -p /data/samples
 mkdir -p /data/trim
 mkdir -p /data/results/rMATS/res/tmp/
+mkdir -p /data/results/vast_tools/compare/tidy
+mkdir -p /data/results/vast_tools/compare_expr
+mkdir -p /data/results/vast_tools/diff/tidy
 
 ## Download the GTF annotation file for Mus musculus (version: 106) directly to /data/annotation directory (ENSEMBL) and unzip the downloaded GTF file
 wget -P /data/annotation "http://ftp.ensembl.org/pub/release-106/gtf/mus_musculus/Mus_musculus.GRCm39.106.chr.gtf.gz" && gunzip /data/annotation/Mus_musculus.GRCm39.106.chr.gtf.gz
@@ -65,28 +68,37 @@ conda activate python2.7
 python rmats.py --s1 /data/samples/txt/wt.txt --s2 /data/samples/txt/condition.txt --gtf /data/annotation/Mus_musculus.GRCm39.106.chr.gtf --bi /data/index/STAR/genome_mm/ -t paired --readLength 150 --cstat 0.05 --nthread 30 --od /data/results/rMATS/res/ --tmp /data/results/rMATS/res/tmp/ &
 
 # Sashimiplot (version: 2.0.4)
+## This section generates sashimi plots for different types of alternative splicing events.
+for i in SE MXE A5SS A3SS RI; do rmats2sashimiplot --b1 ./wt.bam --b2 ./condition.bam --l1 wt --l2 condition -t ${i} -e /data/results/rMATS/res/${i}.MATS.JC.txt -o /data/results/rMATS/res/rmatstosashimiplot/JC/${i}; done &
 
+# vast-tools (version: v2.5.1)
+## Align reads using vast-tools for each sample.
+for i in $(ls /data/samples/trim/*.fq | xargs -n 2 basename | cut -d '_' -f 1); do /bin/vast-tools/vast-tools align -c 30 /data/samples/trim/${i}_val_1.fq /data/samples/trim/${i}_val_2.fq -sp mm10 -n ${i} -o /data/results/vast_tools/ --expr; done &
 
+## Combine the alignment results for all samples.
+/bin/vast-tools/vast-tools combine -c 6 -o /data/results/vast_tools/ -C -sp mm10
 
+## Compare inclusion levels between two conditions.
+/bin/vast-tools/vast-tools compare /data/results/vast_tools/INCLUSION_LEVELS_FULL-mm10-2.tab -a condition -b wt --name_A condition --name_B wt > /data/results/vast_tools/compare/compare.txt
 
+## compare > tidy
+## Tidy up the comparison output for better readability.
+/bin/vast-tools/vast-tools tidy /data/results/vast_tools/DiffAS-mm10-2-dPSI15-range5-min_ALT_use25-upreg_ALT_condition-vs-wt.tab --samples condition,wt --add_names --log > /data/results/vast_tools/compare/tidy/compare_tidy.txt
 
+## Generate plots for the differential alternative splicing results.
+/bin/vast-tools/vast-tools plot /data/results/vast_tools/DiffAS-mm10-2-dPSI15-range5-min_ALT_use25-upreg_ALT_condition-vs-wt.tab
 
+## Compare gene expression levels between two conditions.
+/bin/vast-tools/vast-tools compare_expr /data/results/vast_tools/cRPKM_AND_COUNTS-mm10-2.tab -a condition -b wt --name_A condition --name_B wt > /data/results/vast_tools/compare_expr/compare_expr.txt
 
+## Perform differential splicing analysis at different thresholds.
+/bin/vast-tools/vast-tools diff -a condition -b wt --sampleNameA=Condition --sampleNameB=WT -o /data/results/vast_tools/diff/
+/bin/vast-tools/vast-tools diff -m 0.2 -d m02 -a condition -b wt --sampleNameA=Condition --sampleNameB=WT -o /data/results/vast_tools/diff/
+/bin/vast-tools/vast-tools diff -m 0.4 -d m04 -a condition -b wt --sampleNameA=Condition --sampleNameB=WT -o /data/results/vast_tools/diff/
 
+## Tidy up the differential splicing output.
+/bin/vast-tools/vast-tools tidy INCLUSION_LEVELS_FULL-mm10-2.DIFF.txt --samples condition,wt --add_names --log > /data/results/vast_tools/diff/tidy/output_diff_tidy.txt
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+## Tidy up the inclusion levels output.
+/bin/vast-tools/vast-tools tidy INCLUSION_LEVELS_FULL-mm10-2.tab --samples condition,wt --add_names --log > /data/results/vast_tools/diff/tidy/output_tidy.txt
 
