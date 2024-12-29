@@ -1,14 +1,8 @@
 # Folder and data preparation
 ## Create directory structure for annotation, genome data, Salmon index, sample processing, trimming
-mkdir -p /data/annotation
-mkdir -p /data/genome
-mkdir -p /data/index
-mkdir -p /data/samples
-mkdir -p /data/trim
-mkdir -p /data/results/rMATS/res/tmp/
-mkdir -p /data/results/vast_tools/compare/tidy
-mkdir -p /data/results/vast_tools/compare_expr
-mkdir -p /data/results/vast_tools/diff/tidy
+mkdir -p /data/{annotation,genome,index,samples,trim}
+mkdir -p /data/results/rMATS/res/tmp
+mkdir -p /data/results/vast_tools/{compare/tidy,compare_expr,diff/tidy}
 
 ## Download the GTF annotation file for Mus musculus (version: 106) directly to /data/annotation directory (ENSEMBL) and unzip the downloaded GTF file
 wget -P /data/annotation "http://ftp.ensembl.org/pub/release-106/gtf/mus_musculus/Mus_musculus.GRCm39.106.chr.gtf.gz" && gunzip /data/annotation/Mus_musculus.GRCm39.106.chr.gtf.gz
